@@ -14,21 +14,20 @@ struct MedicineEntriesListView: View {
     
     @State var showCreateView = false
     
+    @State private var searchText = ""
+    
     var body: some View {
         NavigationStack{
             ZStack {
                 CustomBackgroundView()
-                List(medicineEntries) {
+                List(searchResults) {
                     listedMedicineEntry in
                     NavigationLink(destination: EditMedicineEntryView(editingMedicineEntry: listedMedicineEntry)){
                         MedicineEntryRowView(rowMedicineEntry: listedMedicineEntry)
                     }
                 }
-                
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarItems(leading: Text("\(medicineEntries.count)      Medicines").font(.system(size: 40).bold()))
-
-                
                 .toolbar {
                     Button(action: {
                         showCreateView = true
@@ -41,9 +40,19 @@ struct MedicineEntriesListView: View {
             }
             }
             .scrollContentBackground(.hidden)
+            . searchable(text: $searchText)
+        }
+    }
+    var searchResults: [MedicineEntry] {
+        if searchText.isEmpty {
+            return medicineEntries
+        } else {
+            return medicineEntries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
         }
     }
 }
+
+
 
 #Preview {
     MedicineEntriesListView()

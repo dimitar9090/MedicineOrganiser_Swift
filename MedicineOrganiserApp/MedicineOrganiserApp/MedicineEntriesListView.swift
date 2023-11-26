@@ -10,19 +10,20 @@ import SwiftData
 
 struct MedicineEntriesListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query (sort: \MedicineEntry.name)private var medicineEntries: [MedicineEntry]
-    
+    @Query(sort: \MedicineEntry.name) private var medicineEntries: [MedicineEntry]
+
     @State var showCreateView = false
-    
     @State private var searchText = ""
-    
+    @State private var showAlert = false
+    @State private var expiredMedicine: MedicineEntry?
+
     var body: some View {
-        NavigationStack{
+        NavigationStack {
             ZStack {
                 CustomBackgroundView()
-                List(searchResults) {
-                    listedMedicineEntry in
-                    NavigationLink(destination: EditMedicineEntryView(editingMedicineEntry: listedMedicineEntry)){
+
+                List(searchResults) { listedMedicineEntry in
+                    NavigationLink(destination: EditMedicineEntryView(editingMedicineEntry: listedMedicineEntry)) {
                         MedicineEntryRowView(rowMedicineEntry: listedMedicineEntry)
                     }
                 }
@@ -35,19 +36,46 @@ struct MedicineEntriesListView: View {
                         Label("Add Item", systemImage: "plus")
                     }
                 }
-                .sheet(isPresented: $showCreateView){
+                .sheet(isPresented: $showCreateView) {
                     CreateMedicineEntryView()
-            }
+                }
+                .alert(isPresented: $showAlert) {
+                    Alert(
+                        title: Text("Medicine Expired"),
+                        message: Text("\(expiredMedicine?.name ?? "") has expired."),
+                        dismissButton: .default(Text("OK")) {
+                            
+                        }
+                    )
+                }
             }
             .scrollContentBackground(.hidden)
-            . searchable(text: $searchText)
+            .searchable(text: $searchText)
+            .onAppear {
+                checkMedicineExpiry()
+            }
         }
     }
+
     var searchResults: [MedicineEntry] {
         if searchText.isEmpty {
             return medicineEntries
         } else {
             return medicineEntries.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+        }
+    }
+
+    func checkMedicineExpiry() {
+        let currentDate = Date()
+
+        for medicineEntry in medicineEntries {
+
+            if Calendar.current.isDate(medicineEntry.date, inSameDayAs: currentDate) {
+
+
+                expiredMedicine = medicineEntry
+                showAlert = true
+            }
         }
     }
 }
